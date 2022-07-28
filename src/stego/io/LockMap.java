@@ -17,23 +17,23 @@ public class LockMap<T>
      * Lock object to use in try-with-resources.
      **/
     public class Lock
-        implements AutoCloseable
+	implements AutoCloseable
     {
-        private final T target;
-        private final Thread me;
-        private Lock(T target)
-        {
-            this.target = target;
-            this.me = Thread.currentThread();
-        }
-        public void close()
-            throws RuntimeException
-        {
-            if(closingAll) return;
-            if(!lockMap.remove(target, me)) {
-                throw new IllegalStateException("lock mismatch with "+target);
-            }
-        }
+	private final T target;
+	private final Thread me;
+	private Lock(T target)
+	{
+	    this.target = target;
+	    this.me = Thread.currentThread();
+	}
+	public void close()
+	    throws RuntimeException
+	{
+	    if(closingAll) return;
+	    if(!lockMap.remove(target, me)) {
+		throw new IllegalStateException("lock mismatch with "+target);
+	    }
+	}
     }
     private Map<T, Thread> lockMap = Collections.synchronizedMap(new HashMap<T, Thread>());
     private boolean closingAll = false;
@@ -47,21 +47,21 @@ public class LockMap<T>
      **/
     public Lock lock(T target)
     {
-        if(null == target) return null;
-        
-        final Thread me = Thread.currentThread();
+	if(null == target) return null;
+	
+	final Thread me = Thread.currentThread();
 
-        if(closingAll) return null;
+	if(closingAll) return null;
 
-        for(; (null != lockMap.putIfAbsent(target,me)) && !closingAll; Thread.yield()) {
-            if(me.equals(lockMap.get(target))) {
-                throw new IllegalStateException("tried to lock multiple times "+target);
-            }
-        }
+	for(; (null != lockMap.putIfAbsent(target,me)) && !closingAll; Thread.yield()) {
+	    if(me.equals(lockMap.get(target))) {
+		throw new IllegalStateException("tried to lock multiple times "+target);
+	    }
+	}
 
-        if(closingAll) return null;
+	if(closingAll) return null;
 
-        return new Lock(target);
+	return new Lock(target);
     }
 
     /**
@@ -69,15 +69,15 @@ public class LockMap<T>
      **/
     public void close()
     {
-        closingAll = true;
-        final int waitMillis = 10;
-        for(int waitTrials = 300; !lockMap.isEmpty(); waitTrials--) {
-            try {
-                Thread.sleep(waitMillis);
-            }
-            catch (InterruptedException ie) {
-            }
-        }
+	closingAll = true;
+	final int waitMillis = 10;
+	for(int waitTrials = 300; !lockMap.isEmpty(); waitTrials--) {
+	    try {
+		Thread.sleep(waitMillis);
+	    }
+	    catch (InterruptedException ie) {
+	    }
+	}
     }
 
     /**
@@ -89,12 +89,12 @@ public class LockMap<T>
      **/
     private synchronized String contentString()
     {
-        synchronized(lockMap) {
-            return
-                lockMap.entrySet().stream()
-                .map(es -> "["+es.getKey()+";"+es.getValue()+"]")
-                .collect(Collectors.joining(";","[","]"));
-        }
+	synchronized(lockMap) {
+	    return
+		lockMap.entrySet().stream()
+		.map(es -> "["+es.getKey()+";"+es.getValue()+"]")
+		.collect(Collectors.joining(";","[","]"));
+	}
     }
 
     /**
@@ -108,18 +108,18 @@ public class LockMap<T>
      **/
     private static boolean testNestedDifferent()
     {
-        try(LockMap<Long> A = new LockMap<Long>()) {
-            System.out.println("contents: "+A.contentString());
-            try(LockMap.Lock l1 = A.lock(Long.valueOf(1l))) {
-                System.out.println("contents: "+A.contentString());
-                try(LockMap.Lock l2 = A.lock(Long.valueOf(2l))) {
-                    System.out.println("contents: "+A.contentString());
-                }
-                System.out.println("contents: "+A.contentString());
-            }
-            System.out.println("contents: "+A.contentString());
-            return true;
-        }
+	try(LockMap<Long> A = new LockMap<Long>()) {
+	    System.out.println("contents: "+A.contentString());
+	    try(LockMap.Lock l1 = A.lock(Long.valueOf(1l))) {
+		System.out.println("contents: "+A.contentString());
+		try(LockMap.Lock l2 = A.lock(Long.valueOf(2l))) {
+		    System.out.println("contents: "+A.contentString());
+		}
+		System.out.println("contents: "+A.contentString());
+	    }
+	    System.out.println("contents: "+A.contentString());
+	    return true;
+	}
     }
 
     /**
@@ -129,24 +129,24 @@ public class LockMap<T>
      **/
     private static boolean testNestedSame()
     {
-        try(LockMap<Long> A = new LockMap<Long>()) {
-            try {
-                try(LockMap.Lock l1 = A.lock(Long.valueOf(1l))) {
-                    System.out.println("contents: "+A.contentString());
-                    try(LockMap.Lock l2 = A.lock(Long.valueOf(1l))) {
-                        System.out.println("contents: "+A.contentString());
-                    }
-                    System.out.println("unexpected state, did not throw Exception when multilocking");
-                    System.out.println("contents: "+A.contentString());
-                }
-                System.out.println("contents: "+A.contentString());
-            }
-            catch(IllegalStateException ie) {
-                System.out.println("Worked as intended, an Exception when multilocking same resource.");
-                return true;
-            }
-            return false;
-        }
+	try(LockMap<Long> A = new LockMap<Long>()) {
+	    try {
+		try(LockMap.Lock l1 = A.lock(Long.valueOf(1l))) {
+		    System.out.println("contents: "+A.contentString());
+		    try(LockMap.Lock l2 = A.lock(Long.valueOf(1l))) {
+			System.out.println("contents: "+A.contentString());
+		    }
+		    System.out.println("unexpected state, did not throw Exception when multilocking");
+		    System.out.println("contents: "+A.contentString());
+		}
+		System.out.println("contents: "+A.contentString());
+	    }
+	    catch(IllegalStateException ie) {
+		System.out.println("Worked as intended, an Exception when multilocking same resource.");
+		return true;
+	    }
+	    return false;
+	}
     }
 
     /**
@@ -156,20 +156,20 @@ public class LockMap<T>
      **/
     private static boolean testClosing()
     {
-        try(LockMap<Long> A = new LockMap<Long>()) {
-            boolean result = false;
-            A.close();
-            try(LockMap.Lock handle = A.lock(Long.valueOf(3l))) {
-                if(null == handle) {
-                    System.out.println("Working as intended, null lock after closing.");
-                    result = true;
-                } else {
-                    System.out.println("unexpected state, did not return null after closing but instead "+handle);
-                }           
-            }
-            System.out.println("contents: "+A.contentString());
-            return result;
-        }
+	try(LockMap<Long> A = new LockMap<Long>()) {
+	    boolean result = false;
+	    A.close();
+	    try(LockMap.Lock handle = A.lock(Long.valueOf(3l))) {
+		if(null == handle) {
+		    System.out.println("Working as intended, null lock after closing.");
+		    result = true;
+		} else {
+		    System.out.println("unexpected state, did not return null after closing but instead "+handle);
+		}	    
+	    }
+	    System.out.println("contents: "+A.contentString());
+	    return result;
+	}
     }
 
     /**
@@ -179,45 +179,45 @@ public class LockMap<T>
      **/
     private static boolean testParallel()
     {
-        try {
-            try(LockMap<Long> B = new LockMap<Long>()) {
-                System.out.println("B start");
-                Set<Runnable> runs = Collections.synchronizedSet(new HashSet<Runnable>());
-                for(int i =0; i< 8; i++) {
-                    final int myI = i;
-                    runs.add(new Runnable() {
-                            public void run() {
-                                try {
-                                    Thread.sleep(200);
-                                    System.out.println(B.contentString());
-                                }
-                                catch (InterruptedException ie) {
-                                }
-                                try(LockMap.Lock Bl0 = B.lock(Long.valueOf(myI))) {
-                                    try(LockMap.Lock Bl1 = B.lock(Long.valueOf(-1l))) {
-                                        System.out.println(B.contentString());
-                                        System.out.println(myI);
-                                    }
-                                }
-                            }
-                        });
-                }
-                runs.parallelStream().forEach(r -> new Thread(r).start());
-                for(int j=0;j<3;j++) {
-                    System.out.println(".");
-                    try {
-                        Thread.sleep(1000);
-                    }
-                    catch(InterruptedException ie) {
-                    }
-                }
-                System.out.println("B end");
-            }
-        }
-        catch(Exception e) {
-            return false;
-        }
-        return true;
+	try {
+	    try(LockMap<Long> B = new LockMap<Long>()) {
+		System.out.println("B start");
+		Set<Runnable> runs = Collections.synchronizedSet(new HashSet<Runnable>());
+		for(int i =0; i< 8; i++) {
+		    final int myI = i;
+		    runs.add(new Runnable() {
+			    public void run() {
+				try {
+				    Thread.sleep(200);
+				    System.out.println(B.contentString());
+				}
+				catch (InterruptedException ie) {
+				}
+				try(LockMap.Lock Bl0 = B.lock(Long.valueOf(myI))) {
+				    try(LockMap.Lock Bl1 = B.lock(Long.valueOf(-1l))) {
+					System.out.println(B.contentString());
+					System.out.println(myI);
+				    }
+				}
+			    }
+			});
+		}
+		runs.parallelStream().forEach(r -> new Thread(r).start());
+		for(int j=0;j<3;j++) {
+		    System.out.println(".");
+		    try {
+			Thread.sleep(1000);
+		    }
+		    catch(InterruptedException ie) {
+		    }
+		}
+		System.out.println("B end");
+	    }
+	}
+	catch(Exception e) {
+	    return false;
+	}
+	return true;
     }
     /**
      * main method for testing.
@@ -226,21 +226,21 @@ public class LockMap<T>
      **/
     public static void main(String[] args)
     {
-        int successes = 0;
-        int trials = 0;
+	int successes = 0;
+	int trials = 0;
 
-        trials++;
-        if(testNestedDifferent()) successes++;
+	trials++;
+	if(testNestedDifferent()) successes++;
 
-        trials++;
-        if(testNestedSame()) successes++;
+	trials++;
+	if(testNestedSame()) successes++;
 
-        trials++;
-        if(testClosing()) successes++;
+	trials++;
+	if(testClosing()) successes++;
 
-        trials++;
-        if(testParallel()) successes++;
+	trials++;
+	if(testParallel()) successes++;
 
-        System.out.println("tested "+trials+" trials, "+successes+"/"+trials+" succeeded.");
+	System.out.println("tested "+trials+" trials, "+successes+"/"+trials+" succeeded.");
     }
 }

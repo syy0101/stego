@@ -1,6 +1,7 @@
 package stego.io;
 
 import java.io.IOException;
+import stego.crypto.FileSalt;
 
 public interface LargeBitfield
 {
@@ -11,7 +12,7 @@ public interface LargeBitfield
      * @return state of bit in address
      **/
     public boolean getBit(long address)
-        throws IOException;
+	throws IOException;
 
     /**
      * Writes a bit into target address. Blocks if the underlying ParallelByteBuffer blocks.
@@ -20,5 +21,12 @@ public interface LargeBitfield
      * @param state if true, sets the bit, otherwise clears it
      **/
     public void setBit(long address, boolean state)
-        throws IOException;
+	throws IOException;
+
+    /**
+     * Gets the salt bytes on the tail.
+     *
+     * @return tail salt
+     **/
+    public FileSalt getFileSalt();
 }

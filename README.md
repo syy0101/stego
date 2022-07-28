@@ -4,19 +4,19 @@ Stego
 Stego is a tool and library for steganographic hiding of data into large random files.
 
 An empty bitfile named dataplate of 10^9 bytes is created with command:
-java -jar stego.jar dataplate -c 1G
+java -jar stego.jar dataplate.1 -c 1G
 
 File payload.txt is written into bitfile dataplate with command:
-java -jar stego.jar dataplate -w payload.txt
+java -jar stego.jar dataplate.2 -i dataplate.1 -w payload.txt
 
 File payload.txt is read to stdout from bitfile dataplate with command:
-java -jar stego.jar dataplate -r -payload.txt
+java -jar stego.jar dataplate.2 -r -payload.txt
 
 
 Concepts
 --------
 
-BITFILE is a large file filled with cryptographically secure random data.
+BITFILE is a large file filled with cryptographically secure random data that is opened and closed to a password
 
 PLAINTEXT or PAYLOAD is the normal data that is to be hidden.
 
@@ -42,6 +42,67 @@ WRITING a stegofile happens so that first a 32 byte long random key is picked wi
 After the payload has been written, the runway of 8 bytes of all-1s, the 32 byte long random key for it and the length of plaintext data in bytes as java long (8 bytes) is written into a metadata label to ciphertrail that is got from the passcode or the name of the source file. Argon2 is fed the passcode/filenam in UTF-8 and with additional tailing random bytes. The amount of additional random bytes is in itself random, it is the count of immediate continuous 1s from SecureRandom, so there is a half and half chance to get another tailing byte. The content and amount of these bytes is not told to the user and is to be scrubbed after writing. This is done with the intent that no reader can ever be certain that there could not be a payload hidden related to a passcode in the bitfile, as it could just have longer tailing than so far has been tried. User can set a minimum amount for the tailing bytes with -n command.
 
 READING a stegofile happens in the opposite order. Tailings are tried starting from 0 bytes and then increasing the count and bruteforcing through each possible tailing by trying if passcode and current tailing result in ciphertrail that starts with 8 bytes that are all-1s. After such ciphertrail is found, the whole metadata label, which contains the actual data key and data length, is read from the metadata trail. Using metadata, armored data is read from the ciphertrail whose keys and initialization vectors are got with Argon2 from the 32 byte key. Part of armored data might be lost, and data loss is tracked through the Hamming code and Reed-Solomon codes and erroneous codes are replaced with 0s where necessary as per those algorithms. After data is unarmored, it is also decompressed from gzip and output either to the named file or to stdout.
+
+Technical details
+-----------------
+
+Bitfile consists two bitfields, inner and outer. Outer bitfield contains first the key for inner bitfield, 32 bytes, encrypted with the password and random tailing, at its start. After that there is, in clear, salt for the inner bitfield. After those two entries is the inner bitfield, encrypted with the content cipher on the mentioned key. Inner bitfield starts with salt, and the rest of the field is the data area.
+
++==== ENCRYPTED METADATA
+|0-47B: encrypted metadata label, which is (0-7B runway, 8-39B key, 40-47B size of data area
++==== PLAIN SALT for metadata
+|48-79B: outer bitfield salt
++==== ENCRYPTED INNER BITFIELD, SALT
+|80-111B: inner bitfield salt for any stegofiles inside
++==== ENCRYPTED DATA AREA containing randomness and stegodata
+| ++
+
+The data area is encrypted at rest to make it harder to grap clear copies of the data area. If adversary gets copies of cleartext data area of same bitfile before and after insertion of stego contents, they can check how they differ and estimate a maximum possible change inserted before the snapshots.
+
+Stegofile is written to the data area with its content bits encrypted with content cipher of AES 256 using a random initialization vector and a block counter. The addresses of each encrypted bit is decided by address cipher, which generates 64 bit addresses with another initialization vector and key and a block counter. The both keys and initialization vectors are got by combining the following:
+
++====
+|0-31B: bitfile salt
++====
+|32-63B: stegofile key
++====
+
+ =>
+
++====
+|0-31B: address key for AES 256
++====
+|32-55B: address initialization vector
++====
+|56-87B: content key for AES 256
++====
+|88-111B: content initialization vector
++====
+
+Cleardata for writing a stegofile is read from disk, then put through gzip, that result is armored first by Reed-Solomon encoding, its result is then encoded with Hamming(7,4) encoding to protect against data rot. The final result is encrypted and diversified with the method described earlier.
+
+The stegofile key and the amount of data after compression but before armor encoding is recorded to a metadata label which also contains at its start a runway of 8 bytes with all-1 bits in order to confirm detection of true metadata label. This metadata label is stegowritten to address that is determined by the infile salt, the name of the cleardata file and random amount of tailing bytes.
+
++====
+|0-31B: bitfile salt
++====
+|32+B filename in UTF-8
++====
+|X+B random tailing bytes, chosen by counting how many 1s come from a SecureRandom and dividing the result by integer 4 and adding 1 to result.
+|   The point of random amount selection is to make it unprovable that a given name key does not exist in the bitfile.
++====
+
+ =>
+
++====
+|0-7B: all-1s, that is constant value 255
++====
+|8-39B: 32 byte random key for the actual stegodata
++====
+|40-47B: length of unarmored stegodata
++====
+
+Changes to inner bitfile are written so that first a piece of bitfile is read from disk, decrypted with bitfile key into memory, then stegodata that comes to that part of bitfile are written on it, and then the data slice is encrypted to the new bitfile with the new bitfile's key and outer filesalt.
 
 Miscellannious
 --------------

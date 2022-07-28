@@ -49,12 +49,19 @@ Technical details
 Bitfile consists two bitfields, inner and outer. Outer bitfield contains first the key for inner bitfield, 32 bytes, encrypted with the password and random tailing, at its start. After that there is, in clear, salt for the inner bitfield. After those two entries is the inner bitfield, encrypted with the content cipher on the mentioned key. Inner bitfield starts with salt, and the rest of the field is the data area.
 
 +==== ENCRYPTED METADATA
+
 |0-47B: encrypted metadata label, which is (0-7B runway, 8-39B key, 40-47B size of data area
+
 +==== PLAIN SALT for metadata
+
 |48-79B: outer bitfield salt
+
 +==== ENCRYPTED INNER BITFIELD, SALT
+
 |80-111B: inner bitfield salt for any stegofiles inside
+
 +==== ENCRYPTED DATA AREA containing randomness and stegodata
+
 | ++
 
 The data area is encrypted at rest to make it harder to grap clear copies of the data area. If adversary gets copies of cleartext data area of same bitfile before and after insertion of stego contents, they can check how they differ and estimate a maximum possible change inserted before the snapshots.
@@ -62,21 +69,33 @@ The data area is encrypted at rest to make it harder to grap clear copies of the
 Stegofile is written to the data area with its content bits encrypted with content cipher of AES 256 using a random initialization vector and a block counter. The addresses of each encrypted bit is decided by address cipher, which generates 64 bit addresses with another initialization vector and key and a block counter. The both keys and initialization vectors are got by combining the following:
 
 +====
+
 |0-31B: bitfile salt
+
 +====
+
 |32-63B: stegofile key
+
 +====
 
  =>
 
 +====
+
 |0-31B: address key for AES 256
+
 +====
+
 |32-55B: address initialization vector
+
 +====
+
 |56-87B: content key for AES 256
+
 +====
+
 |88-111B: content initialization vector
+
 +====
 
 Cleardata for writing a stegofile is read from disk, then put through gzip, that result is armored first by Reed-Solomon encoding, its result is then encoded with Hamming(7,4) encoding to protect against data rot. The final result is encrypted and diversified with the method described earlier.
@@ -84,22 +103,35 @@ Cleardata for writing a stegofile is read from disk, then put through gzip, that
 The stegofile key and the amount of data after compression but before armor encoding is recorded to a metadata label which also contains at its start a runway of 8 bytes with all-1 bits in order to confirm detection of true metadata label. This metadata label is stegowritten to address that is determined by the infile salt, the name of the cleardata file and random amount of tailing bytes.
 
 +====
+
 |0-31B: bitfile salt
+
 +====
+
 |32+B filename in UTF-8
+
 +====
+
 |X+B random tailing bytes, chosen by counting how many 1s come from a SecureRandom and dividing the result by integer 4 and adding 1 to result.
+
 |   The point of random amount selection is to make it unprovable that a given name key does not exist in the bitfile.
+
 +====
 
  =>
 
 +====
+
 |0-7B: all-1s, that is constant value 255
+
 +====
+
 |8-39B: 32 byte random key for the actual stegodata
+
 +====
+
 |40-47B: length of unarmored stegodata
+
 +====
 
 Changes to inner bitfile are written so that first a piece of bitfile is read from disk, decrypted with bitfile key into memory, then stegodata that comes to that part of bitfile are written on it, and then the data slice is encrypted to the new bitfile with the new bitfile's key and outer filesalt.

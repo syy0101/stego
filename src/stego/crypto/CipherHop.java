@@ -6,7 +6,11 @@ public class CipherHop
     public final boolean cipherBit;
     public CipherHop(long address, boolean cipherBit)
     {
-        this.address = address;
-        this.cipherBit = cipherBit;
+	this.address = address;
+	this.cipherBit = cipherBit;
+    }
+    public String toString()
+    {
+	return ""+address+(cipherBit?"!":".");
     }
 }

@@ -70,11 +70,11 @@ Stegofile is written to the data area with its content bits encrypted with conte
 
 +====
 
-|0-31B: bitfile salt
+| 0-31B: bitfile salt
 
 +====
 
-|32-63B: stegofile key
+| 32-63B: stegofile key
 
 +====
 
@@ -82,19 +82,19 @@ Stegofile is written to the data area with its content bits encrypted with conte
 
 +====
 
-|0-31B: address key for AES 256
+| 0-31B: address key for AES 256
 
 +====
 
-|32-55B: address initialization vector
+| 32-55B: address initialization vector
 
 +====
 
-|56-87B: content key for AES 256
+| 56-87B: content key for AES 256
 
 +====
 
-|88-111B: content initialization vector
+| 88-111B: content initialization vector
 
 +====
 
@@ -104,15 +104,15 @@ The stegofile key and the amount of data after compression but before armor enco
 
 +====
 
-|0-31B: bitfile salt
+| 0-31B: bitfile salt
 
 +====
 
-|32+B filename in UTF-8
+| 32+B filename in UTF-8
 
 +====
 
-|X+B random tailing bytes, chosen by counting how many 1s come from a SecureRandom and dividing the result by integer 4 and adding 1 to result.
+| X+B random tailing bytes, chosen by counting how many 1s come from a SecureRandom and dividing the result by integer 4 and adding 1 to result.
 
 |   The point of random amount selection is to make it unprovable that a given name key does not exist in the bitfile.
 
@@ -122,15 +122,15 @@ The stegofile key and the amount of data after compression but before armor enco
 
 +====
 
-|0-7B: all-1s, that is constant value 255
+| 0-7B: all-1s, that is constant value 255
 
 +====
 
-|8-39B: 32 byte random key for the actual stegodata
+| 8-39B: 32 byte random key for the actual stegodata
 
 +====
 
-|40-47B: length of unarmored stegodata
+| 40-47B: length of unarmored stegodata
 
 +====
 

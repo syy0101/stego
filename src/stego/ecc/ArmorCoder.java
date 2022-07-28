@@ -46,7 +46,7 @@ public abstract class ArmorCoder
     private ArmorCoder next = null;
     protected ArmorCoder getNext()
     {
-        return next;
+	return next;
     }
 
     /**
@@ -64,14 +64,14 @@ public abstract class ArmorCoder
      **/
     public int armoredLength(int datalength)
     {
-        int len = datalength;
-        if(null != next) {
-            len = next.armoredLength(datalength);
-        }
-        len *= this.armorFactor();
-        if(len < datalength)
-            throw new IllegalArgumentException("Overflow with length");
-        return len;
+	int len = datalength;
+	if(null != next) {
+	    len = next.armoredLength(datalength);
+	}
+	len *= this.armorFactor();
+	if(len < datalength)
+	    throw new IllegalArgumentException("Overflow with length");
+	return len;
     }
 
     /**
@@ -81,7 +81,7 @@ public abstract class ArmorCoder
      **/
     public int sourcePacketSize()
     {
-        return armoredLength(maxData());
+	return armoredLength(maxData());
     }
 
     /**
@@ -92,8 +92,8 @@ public abstract class ArmorCoder
      **/
     public ArmorCoder setNext(ArmorCoder n)
     {
-        this.next = n;
-        return this;
+	this.next = n;
+	return this;
     }
 
     /**
@@ -103,68 +103,68 @@ public abstract class ArmorCoder
      **/
     private void encodeChain(EncodingPacket ep)
     {
-        ep.split(this.maxData());
+	ep.split(this.maxData());
 
-        //if this packet does not contain the actual data, then encode each child recursively
-        if(!ep.isBottom()) {
-            for(EncodingPacket cur : ep.getChildren()) {
-                encodeChain(cur);
-            }
-        } else {
-            //encoding main
+	//if this packet does not contain the actual data, then encode each child recursively
+	if(!ep.isBottom()) {
+	    for(EncodingPacket cur : ep.getChildren()) {
+		encodeChain(cur);
+	    }
+	} else {
+	    //encoding main
 
-            //encode the plaintext of this packet and store resulting packets into here
-            byte[][] intermediate = this.encode(ep.getData());
+	    //encode the plaintext of this packet and store resulting packets into here
+	    byte[][] intermediate = this.encode(ep.getData());
 
-            //gather resulting children here
-            EncodingPacket[] result = new EncodingPacket[intermediate.length];
-            Arrays
-                .parallelSetAll(result,
-                                i->
-                                {
-                                    //create the result packet
-                                    EncodingPacket r = new EncodingPacket(intermediate[i]);
+	    //gather resulting children here
+	    EncodingPacket[] result = new EncodingPacket[intermediate.length];
+	    Arrays
+		.parallelSetAll(result,
+				i->
+				{
+				    //create the result packet
+				    EncodingPacket r = new EncodingPacket(intermediate[i]);
 
-                                    //if we have a chained armorer, feed the result packets to them
-                                    if(null != next) {
+				    //if we have a chained armorer, feed the result packets to them
+				    if(null != next) {
 
-                                        int maxData = next.maxData();
-                                        if(intermediate[i].length > maxData) {
-                                            //if the current armored result is too large for the next armorer, split it
-                                            byte[][] childData
-                                                = new byte[maxData]
-                                                [(intermediate[i].length +maxData-1)/maxData];
-                                            EncodingPacket[] children
-                                                = new EncodingPacket[childData.length];
-                                            IntStream.range(0, childData.length)
-                                                .parallel()
-                                                .forEach(j ->
-                                                         {
-                                                             System
-                                                                 .arraycopy(intermediate[i], j*maxData,
-                                                                            childData[j], 0,
-                                                                            Math
-                                                                            .min(maxData,
-                                                                                 intermediate[i].length
-                                                                                 - j*maxData
-                                                                                 )
-                                                                            );
-                                                             children[j] = new EncodingPacket(childData[j]);
-                                                             next.encodeChain(children[j]);
-                                                         }
-                                                         );
-                                            r.replaceData(children);
-                                        } else {
-                                            //if it was not too large, armor it by itself
-                                            next.encodeChain(r);
-                                        }
-                                    }
-                                    return r;                           
-                                }
-                                );
-            //gather results to result
-            ep.replaceData(result);
-        }
+					int maxData = next.maxData();
+					if(intermediate[i].length > maxData) {
+					    //if the current armored result is too large for the next armorer, split it
+					    byte[][] childData
+						= new byte[maxData]
+						[(intermediate[i].length +maxData-1)/maxData];
+					    EncodingPacket[] children
+						= new EncodingPacket[childData.length];
+					    IntStream.range(0, childData.length)
+						.parallel()
+						.forEach(j ->
+							 {
+							     System
+								 .arraycopy(intermediate[i], j*maxData,
+									    childData[j], 0,
+									    Math
+									    .min(maxData,
+										 intermediate[i].length
+										 - j*maxData
+										 )
+									    );
+							     children[j] = new EncodingPacket(childData[j]);
+							     next.encodeChain(children[j]);
+							 }
+							 );
+					    r.replaceData(children);
+					} else {
+					    //if it was not too large, armor it by itself
+					    next.encodeChain(r);
+					}
+				    }
+				    return r;				
+				}
+				);
+	    //gather results to result
+	    ep.replaceData(result);
+	}
     }
 
     /**
@@ -175,11 +175,11 @@ public abstract class ArmorCoder
      **/
     public byte[] encodeChain(byte[] in)
     {
-        EncodingPacket top = new EncodingPacket(in);
-        encodeChain(top);
-        byte[] result =  top.flatten();
-        top.destroy();
-        return result;
+	EncodingPacket top = new EncodingPacket(in);
+	encodeChain(top);
+	byte[] result =  top.flatten();
+	top.destroy();
+	return result;
     }
 
     /**
@@ -190,38 +190,38 @@ public abstract class ArmorCoder
      **/
     public DecodedPacket decodeChain(DecodedPacket in)
     {
-        DecodedPacket middle = in;
+	DecodedPacket middle = in;
 
-        //first unarmor the next armoring of the chain
-        if(next != null) {
+	//first unarmor the next armoring of the chain
+	if(next != null) {
 
-            //split the packet into correct sized packets for the chain's next armorer
-            DecodedPacket[] packets = in.split(next.maxSourceData());
+	    //split the packet into correct sized packets for the chain's next armorer
+	    DecodedPacket[] packets = in.split(next.maxSourceData());
 
-            //decode each packet
-            IntStream.range(0,packets.length)
-                .parallel()
-                .forEach(i ->
-                         packets[i] = next.decodeChain(packets[i])
-                         );
+	    //decode each packet
+	    IntStream.range(0,packets.length)
+		.parallel()
+		.forEach(i ->
+			 packets[i] = next.decodeChain(packets[i])
+			 );
 
-            //join the resulted unarmored data into one again
-            middle = DecodedPacket.join(packets);
-        }
+	    //join the resulted unarmored data into one again
+	    middle = DecodedPacket.join(packets);
+	}
 
-        //decode the armored data with this armoring
+	//decode the armored data with this armoring
 
-        //split the data into proper packets for this armorer
-        DecodedPacket[] midpac = middle.split(this.maxSourceData());
-        IntStream.range(0, midpac.length)
-            .parallel()
-            .forEach(i ->
-                     {
-                         midpac[i] = this.decode(midpac[i]);
-                     }
-                     );
-        //join the plaintext results
-        return DecodedPacket.join(midpac);
+	//split the data into proper packets for this armorer
+	DecodedPacket[] midpac = middle.split(this.maxSourceData());
+	IntStream.range(0, midpac.length)
+	    .parallel()
+	    .forEach(i ->
+		     {
+			 midpac[i] = this.decode(midpac[i]);
+		     }
+		     );
+	//join the plaintext results
+	return DecodedPacket.join(midpac);
     }
 
     /**
@@ -231,9 +231,9 @@ public abstract class ArmorCoder
      **/
     public static ArmorCoder getDefaultChain()
     {
-        return
-            new ReedSolomonCoder(128)
-            .setNext(new HammingCoder());
+	return
+	    new ReedSolomonCoder(128)
+	    .setNext(new HammingCoder());
     }
 
     /**
@@ -243,87 +243,87 @@ public abstract class ArmorCoder
      * @throws IOException if such happens when io operating
      **/
     public static void main(String[] args)
-        throws IOException
+	throws IOException
     {
-        byte[] data =
-            ("testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata"
-            +"testdata")
-            .getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        System.out.println("testdata:");
-        System.out.println(data.length);
-        System.out.println(Arrays.toString(data));
-        ArmorCoder def = ArmorCoder.getDefaultChain();
-        byte[] encoded = def.encodeChain(data);
-        System.out.println("encoded:");
-        System.out.println(Arrays.toString(encoded));
-        System.out.println("decodeorigin:");
-        DecodedPacket decodeorigin = new DecodedPacket(encoded);
-        System.out.println("decoderesult:");
-        DecodedPacket decoderesult = def.decodeChain(decodeorigin);
-        System.out.println("decoded:");
-        System.out.println(Arrays.toString(decoderesult.split(data.length)[0].getRawPacket()));
-        System.out.println("result: "+Arrays.equals(data, decoderesult.split(data.length)[0].getRawPacket()));
+	byte[] data =
+	    ("testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata"
+	    +"testdata")
+	    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+	System.out.println("testdata:");
+	System.out.println(data.length);
+	System.out.println(Arrays.toString(data));
+	ArmorCoder def = ArmorCoder.getDefaultChain();
+	byte[] encoded = def.encodeChain(data);
+	System.out.println("encoded:");
+	System.out.println(Arrays.toString(encoded));
+	System.out.println("decodeorigin:");
+	DecodedPacket decodeorigin = new DecodedPacket(encoded);
+	System.out.println("decoderesult:");
+	DecodedPacket decoderesult = def.decodeChain(decodeorigin);
+	System.out.println("decoded:");
+	System.out.println(Arrays.toString(decoderesult.split(data.length)[0].getRawPacket()));
+	System.out.println("result: "+Arrays.equals(data, decoderesult.split(data.length)[0].getRawPacket()));
     }
 }

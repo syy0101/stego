@@ -5,18 +5,18 @@ public class CodingException
 {
     public CodingException()
     {
-        super();
+	super();
     }
     public CodingException(Throwable t)
     {
-        super(t);
+	super(t);
     }
     public CodingException(String explanation)
     {
-        super(explanation);
+	super(explanation);
     }
     public CodingException(String explanation, Throwable t)
     {
-        super(explanation, t);
+	super(explanation, t);
     }
 }

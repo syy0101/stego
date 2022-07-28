@@ -25,12 +25,12 @@ public class EncodingPacket
      **/
     public void destroy()
     {
-        if(child != null) {
-            destroyChildren();
-        }
-        clearData();
-        destroyed = true;
-        
+	if(child != null) {
+	    destroyChildren();
+	}
+	clearData();
+	destroyed = true;
+	
     }
 
     /**
@@ -40,7 +40,7 @@ public class EncodingPacket
      **/
     public boolean isDestroyed()
     {
-        return destroyed;
+	return destroyed;
     }
 
     /**
@@ -48,11 +48,11 @@ public class EncodingPacket
      **/
     private void destroyChildren()
     {
-        if(null == child)
-            return;
-        for(EncodingPacket ep : child)
-            ep.destroy();
-        child = null;
+	if(null == child)
+	    return;
+	for(EncodingPacket ep : child)
+	    ep.destroy();
+	child = null;
     }
 
     /**
@@ -60,10 +60,10 @@ public class EncodingPacket
      **/
     private void clearData()
     {
-        if(data != null) {
-            Arrays.fill(data, (byte) 0);
-            data = null;
-        }
+	if(data != null) {
+	    Arrays.fill(data, (byte) 0);
+	    data = null;
+	}
     }
 
     //children of this
@@ -80,11 +80,11 @@ public class EncodingPacket
      **/
     public static EncodingPacket[] wrap(byte[][] source)
     {
-        EncodingPacket[] result = new EncodingPacket[source.length];
-        Arrays.parallelSetAll(result,
-                              i -> new EncodingPacket(source[i])
-                              );
-        return result;
+	EncodingPacket[] result = new EncodingPacket[source.length];
+	Arrays.parallelSetAll(result,
+			      i -> new EncodingPacket(source[i])
+			      );
+	return result;
     }
 
     /**
@@ -96,42 +96,42 @@ public class EncodingPacket
      **/
     public void split(int size)
     {
-        if(destroyed)
-            throw new IllegalStateException();
+	if(destroyed)
+	    throw new IllegalStateException();
 
-        //if this does not contain data in itself, do nothing
-        if(!isBottom()) {
-            return;
-        }
+	//if this does not contain data in itself, do nothing
+	if(!isBottom()) {
+	    return;
+	}
 
-        //if we don't have data but for 1 packet, do nothing
-        if(data.length <= size)
-            return;
+	//if we don't have data but for 1 packet, do nothing
+	if(data.length <= size)
+	    return;
 
-        //calculate how many packets we need
-        int amount = (data.length + size -1) / size;
-        byte[][] nData = new byte[amount][];
-        IntStream.range(0, amount)
-            .parallel()
-            .forEach(i ->
-                     {
-                         //allocate the amount of bytes that go into the child packet
-                         nData[i]
-                             = new byte[Math
-                                        .min(size,
-                                             data.length - i*size
-                                             )
-                                        ];
-                         //copy the correct amount of bytes from this data to child data packet
-                         System
-                             .arraycopy(data, i*size,
-                                        nData[i],0,
-                                        nData[i].length
-                                        );
-                     }
-                     );
-        //switch this packet to contain the child packets instead of data.
-        replaceData(wrap(nData));
+	//calculate how many packets we need
+	int amount = (data.length + size -1) / size;
+	byte[][] nData = new byte[amount][];
+	IntStream.range(0, amount)
+	    .parallel()
+	    .forEach(i ->
+		     {
+			 //allocate the amount of bytes that go into the child packet
+			 nData[i]
+			     = new byte[Math
+					.min(size,
+					     data.length - i*size
+					     )
+					];
+			 //copy the correct amount of bytes from this data to child data packet
+			 System
+			     .arraycopy(data, i*size,
+					nData[i],0,
+					nData[i].length
+					);
+		     }
+		     );
+	//switch this packet to contain the child packets instead of data.
+	replaceData(wrap(nData));
     }
 
     /**
@@ -143,65 +143,65 @@ public class EncodingPacket
      **/
     public byte[] flatten()
     {
-        if(destroyed)
-            throw new IllegalStateException();
+	if(destroyed)
+	    throw new IllegalStateException();
 
-        //make a list of all packets in the tree of this and children
-        int index = 0;
-        ArrayList<EncodingPacket> bottomPackets = new ArrayList<EncodingPacket>();
+	//make a list of all packets in the tree of this and children
+	int index = 0;
+	ArrayList<EncodingPacket> bottomPackets = new ArrayList<EncodingPacket>();
 
-        //add this itself for checking
-        bottomPackets.add(this);
+	//add this itself for checking
+	bottomPackets.add(this);
 
-        //repeat loop to finding bottom packets with data
-        while(index < bottomPackets.size()) {
+	//repeat loop to finding bottom packets with data
+	while(index < bottomPackets.size()) {
 
-            //all the packets before current index are bottom packets
-            EncodingPacket current = bottomPackets.get(index);
-            if(current.isBottom()) {
-                //if current is a bottom packet, move on
-                index++;
-            } else {
-                //if this was not a bottom packet, replace this packet with its child packets
-                //retain the index so the next time we check the first child
-                bottomPackets.remove(index);
-                bottomPackets.addAll(index, Arrays.asList(current.getChildren()));
-            }
-        }
-        //now the bottomPackets contain the bottom packets in order
-        
-        //make temporary space to store copies of the data of bottom packets
-        byte[][] result = new byte[bottomPackets.size()][];
+	    //all the packets before current index are bottom packets
+	    EncodingPacket current = bottomPackets.get(index);
+	    if(current.isBottom()) {
+		//if current is a bottom packet, move on
+		index++;
+	    } else {
+		//if this was not a bottom packet, replace this packet with its child packets
+		//retain the index so the next time we check the first child
+		bottomPackets.remove(index);
+		bottomPackets.addAll(index, Arrays.asList(current.getChildren()));
+	    }
+	}
+	//now the bottomPackets contain the bottom packets in order
+	
+	//make temporary space to store copies of the data of bottom packets
+	byte[][] result = new byte[bottomPackets.size()][];
 
-        //array to calculate the starting positions of datas
-        int[] cumSize = new int[result.length];
+	//array to calculate the starting positions of datas
+	int[] cumSize = new int[result.length];
 
-        //copy the datas into the temporary space
-        //and calculate the cumulative ending points of each data
-        for(int i = 0; i< result.length; i++) {
-            result[i] = bottomPackets.get(i).getData();
-            cumSize[i] = result[i].length + ((i>0)?cumSize[i-1]:0);
-        }
+	//copy the datas into the temporary space
+	//and calculate the cumulative ending points of each data
+	for(int i = 0; i< result.length; i++) {
+	    result[i] = bottomPackets.get(i).getData();
+	    cumSize[i] = result[i].length + ((i>0)?cumSize[i-1]:0);
+	}
 
-        //array for the result
-        byte[] res = new byte[cumSize[cumSize.length-1]];
+	//array for the result
+	byte[] res = new byte[cumSize[cumSize.length-1]];
 
-        IntStream.range(0, result.length)
-            .parallel()
-            .forEach(i->
-                     {
-                         //copy the temp datas to result
-                         System.arraycopy(result[i],0,
-                                          res, ((i>0)? cumSize[i-1] : 0),
-                                          result[i].length
-                                          );
-                         //clear the temp data after copy
-                         Arrays.fill(result[i],(byte)0);
-                     }
-                     );
+	IntStream.range(0, result.length)
+	    .parallel()
+	    .forEach(i->
+		     {
+			 //copy the temp datas to result
+			 System.arraycopy(result[i],0,
+					  res, ((i>0)? cumSize[i-1] : 0),
+					  result[i].length
+					  );
+			 //clear the temp data after copy
+			 Arrays.fill(result[i],(byte)0);
+		     }
+		     );
 
-        //return result
-        return res;
+	//return result
+	return res;
     }
 
     /**
@@ -212,8 +212,8 @@ public class EncodingPacket
      **/
     public EncodingPacket(byte[] source)
     {
-        data = source.clone();
-        Arrays.fill(source, (byte)0);
+	data = source.clone();
+	Arrays.fill(source, (byte)0);
     }
 
     /**
@@ -224,7 +224,7 @@ public class EncodingPacket
      **/
     public EncodingPacket(EncodingPacket[] children)
     {
-        child = children.clone();
+	child = children.clone();
     }
 
     /**
@@ -234,7 +234,7 @@ public class EncodingPacket
      **/
     public boolean isBottom()
     {
-        return data != null;
+	return data != null;
     }
 
     /**
@@ -244,9 +244,9 @@ public class EncodingPacket
      **/
     public byte[] getData()
     {
-        byte[] result = data.clone();
-        clearData();
-        return result;
+	byte[] result = data.clone();
+	clearData();
+	return result;
     }
 
     /**
@@ -256,7 +256,7 @@ public class EncodingPacket
      **/
     public EncodingPacket[] getChildren()
     {
-        return child.clone();
+	return child.clone();
     }
 
     /**
@@ -267,11 +267,11 @@ public class EncodingPacket
      **/
     public void replaceData(EncodingPacket[] children)
     {
-        clearData();
-        destroyChildren();
-        if(destroyed)
-            throw new IllegalStateException();
-        child = children.clone();
+	clearData();
+	destroyChildren();
+	if(destroyed)
+	    throw new IllegalStateException();
+	child = children.clone();
     }
 
     /**
@@ -282,11 +282,11 @@ public class EncodingPacket
      **/
     public void replaceData(byte[] data)
     {
-        destroyChildren();
-        clearData();
-        if(destroyed)
-            throw new IllegalStateException();
-        this.data = data.clone();
-        Arrays.fill(data, (byte)0);
+	destroyChildren();
+	clearData();
+	if(destroyed)
+	    throw new IllegalStateException();
+	this.data = data.clone();
+	Arrays.fill(data, (byte)0);
     }
 }
